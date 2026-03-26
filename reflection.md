@@ -2,6 +2,8 @@
 
 ## 1. System Design
 
+It should allow the user to enter their information and their pets' information, add and change tasks, and create and display a daily schedule.
+
 **a. Initial design**
 
 - Briefly describe your initial UML design.
