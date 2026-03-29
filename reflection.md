@@ -9,6 +9,8 @@ It should allow the user to enter their information and their pets' information,
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+For the UML design, I included classes Pet, Task, Owner, and Schedule. The Pet class had the responbility of giving characteristics to pets and the associated methods like getting the information about each pet. Then for Task, it had attributes like duration, description etc and then for methods like whether that task was done and whether it can be edited. Then for Owner, it had attributes like name, the pets it has etc. and the methods it would have like adding, removing pets for the owner. And then for the Schedule, it had characteristics like the date, owner, task, and reasoning and the methods like adding, removing tasks, and making new plans and explaining the reasoning for that task.
+
 **b. Design changes**
 
 - Did your design change during implementation?
