@@ -100,5 +100,6 @@ Confidence level: 5
 - Task completion status updates
 - Task association with Pet
 
-![PawPal demo screenshot](demo.png)
+
+<img width="646" height="906" alt="Screenshot 2026-03-29 214623" src="https://github.com/user-attachments/assets/ea697c4b-5a63-4db2-baa9-1d3223aa9f33" />
 
