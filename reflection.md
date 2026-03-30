@@ -30,6 +30,8 @@ For the UML design, I included classes Pet, Task, Owner, and Schedule. The Pet c
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
+The scheduler sorts by priority in such an order that it considers tasks with high priorities but long durations over tasks with lower priorities but much shorter durations, which could be better in another scenario, but its reasonable in this case because this project is aiming to work with the highest priority tasks first, rather than trying to fit the maxmimum number of tasks in a day.
+
 ---
 
 ## 3. AI Collaboration

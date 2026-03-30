@@ -1,6 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import dataclass, field, replace
+from datetime import date, timedelta
+from typing import List, Tuple
 
 
 @dataclass
@@ -17,6 +18,10 @@ class Task:
     def mark_complete(self) -> None:
         """Mark the task as complete."""
         self.is_complete = True
+
+    def next_occurrence(self) -> Task:
+        """Return a new pending copy of this task for its next occurrence."""
+        return replace(self, is_complete=False, pet=self.pet)
 
     def edit(self, field: str, value) -> None:
         """Edit a field on the task if it exists."""
@@ -100,8 +105,48 @@ class Schedule:
         """Remove a task from the schedule."""
         self.tasks.remove(task)
 
+    def complete_task(self, task: Task) -> Task | None:
+        """Mark a task complete and auto-schedule the next occurrence for recurring tasks.
+
+        For 'daily' tasks, creates a copy due 1 day after this schedule's date.
+        For 'weekly' tasks, creates a copy due 7 days after this schedule's date.
+        'as-needed' tasks are marked complete with no follow-up scheduled.
+        The new task is added directly to the same pet's task list.
+
+        Args:
+            task: A Task already present in this schedule.
+
+        Returns:
+            The newly created Task for the next occurrence, or None if the task
+            is not recurring (frequency == 'as-needed').
+        """
+        task.mark_complete()
+
+        if task.frequency not in ("daily", "weekly"):
+            return None
+
+        days = 1 if task.frequency == "daily" else 7
+        next_date = date.fromisoformat(self.date) + timedelta(days=days)
+
+        next_task = task.next_occurrence()
+        if task.pet:
+            task.pet.add_task(next_task)
+            print(
+                f"  -> '{next_task.title}' rescheduled for {next_date} ({task.frequency})"
+            )
+        return next_task
+
     def generate_plan(self) -> None:
-        """Generate a daily task plan based on priority and owner availability."""
+        """Generate a daily task plan using a greedy priority-first algorithm.
+
+        Collects all incomplete tasks from every pet owned by this schedule's
+        owner, sorts them by priority (highest first), then adds them one by one
+        until the owner's available time is exhausted.  Tasks that don't fit are
+        skipped and noted in the reasoning log.
+
+        Algorithm: greedy — O(n log n) sort + O(n) pass.
+        Side effects: replaces self.tasks and self.reasoning in place.
+        """
         # Pull all tasks from every pet the owner has
         all_tasks = self.owner.get_all_tasks()
 
@@ -135,6 +180,61 @@ class Schedule:
 
         if skipped:
             self.reasoning += "Skipped:\n" + "\n".join(skipped)
+
+    def find_conflicts(self) -> List[Tuple[Task, Task]]:
+        """Return pairs of tasks whose time windows overlap.
+
+        Two tasks conflict when one starts before the other finishes:
+            start_a < end_b  AND  start_b < end_a
+        Uses an O(n²) pairwise scan over all scheduled tasks; works across
+        pets and within the same pet.
+
+        Returns:
+            A list of (Task, Task) tuples where each pair overlaps in time.
+            Returns an empty list when the schedule has no conflicts.
+        """
+        def to_minutes(t: str) -> int:
+            h, m = t.split(":")
+            return int(h) * 60 + int(m)
+
+        conflicts = []
+        for i, a in enumerate(self.tasks):
+            for b in self.tasks[i + 1:]:
+                start_a, end_a = to_minutes(
+                    a.time), to_minutes(a.time) + a.duration
+                start_b, end_b = to_minutes(
+                    b.time), to_minutes(b.time) + b.duration
+                if start_a < end_b and start_b < end_a:
+                    conflicts.append((a, b))
+        return conflicts
+
+    def warn_conflicts(self) -> str | None:
+        """Return a warning string listing any overlapping tasks, or None if clear."""
+        conflicts = self.find_conflicts()
+        if not conflicts:
+            return None
+        lines = [
+            f"WARNING: {len(conflicts)} scheduling conflict(s) on {self.date}:"]
+        for a, b in conflicts:
+            pet_a = a.pet.name if a.pet else "unassigned"
+            pet_b = b.pet.name if b.pet else "unassigned"
+            lines.append(
+                f"  - [{pet_a}] {a.title} ({a.time}, {a.duration}min)"
+                f"  overlaps  [{pet_b}] {b.title} ({b.time}, {b.duration}min)"
+            )
+        return "\n".join(lines)
+
+    def filter_by_status(self, is_complete: bool) -> List[Task]:
+        """Return tasks matching the given completion status."""
+        return [t for t in self.tasks if t.is_complete == is_complete]
+
+    def filter_by_pet(self, pet_name: str) -> List[Task]:
+        """Return tasks belonging to the pet with the given name."""
+        return [t for t in self.tasks if t.pet and t.pet.name == pet_name]
+
+    def sort_by_time(self) -> None:
+        """Sort the scheduled tasks in-place by their start time (HH:MM)."""
+        self.tasks.sort(key=lambda t: t.time)
 
     def explain_reasoning(self) -> str:
         """Return human-readable reasoning for the generated schedule."""
