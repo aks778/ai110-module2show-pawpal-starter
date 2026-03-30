@@ -164,11 +164,37 @@ if st.button("Generate schedule"):
     schedule.generate_plan()
 
     st.success("Schedule generated!")
+
+    # Check for conflicts and show warnings
+    conflict_warning = schedule.warn_conflicts()
+    if conflict_warning:
+        st.warning(conflict_warning)
+
     st.write("**Reasoning:**")
     st.code(schedule.explain_reasoning(), language="text")
 
     st.write("**Scheduled Tasks:**")
     if schedule.tasks:
-        schedule.display()
+        # Sort tasks by time for better display
+        schedule.sort_by_time()
+
+        # Create a professional table display
+        task_data = []
+        for task in schedule.tasks:
+            task_data.append({
+                "Time": task.time,
+                "Task": task.title,
+                "Pet": task.pet.name if task.pet else "Unassigned",
+                "Duration (min)": task.duration,
+                "Priority": task.priority,
+                "Status": "Complete" if task.is_complete else "Pending",
+                "Frequency": task.frequency
+            })
+
+        st.table(task_data)
+
+        # Show total time used
+        total_time = sum(task.duration for task in schedule.tasks)
+        st.info(f"Total scheduled time: {total_time} minutes out of {st.session_state.owner.time_available} minutes available")
     else:
         st.info("No tasks were scheduled (possibly all complete or time constraints).")
