@@ -44,3 +44,8 @@ pip install -r requirements.txt
 
 ## Smarter Scheduling
 New features include allowing the user to see conflicts between task times and duration, warn the user of such conflicts, filter the tasks by completion status, and sort the tasks based on time.
+
+## Testing PawPal+
+To run tests: python -m pytest
+The tests check if tasks are assigned to pets correctly, if completion status of those tasks change as they are completed, if the tasks are sorted correctly by time, if tasks that have the label of "daily" have recurring occurrences, and lastly, if conflicts are accurately detected.
+Confidence level: 5
